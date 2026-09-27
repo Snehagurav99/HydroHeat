@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rain + Solar Hybrid Water Heating System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">RS</span>
+    <div class="brand-text">
+      <h1>Rain + Solar Hybrid Water Heating System</h1>
+      <p>Smart energy recovery for low-sunlight conditions</p>
+    </div>
+  </div>
+  <div class="run-controls">
+    <button id="btnStart" class="btn btn-start">▶ Start Simulation</button>
+    <button id="btnPause" class="btn btn-pause" disabled>⏸ Pause</button>
+    <button id="btnReset" class="btn btn-reset">↻ Reset</button>
+  </div>
+  <div class="live-badge" id="liveBadge">● LIVE SIMULATION</div>
+</header>
+
+<main class="layout">
+
+  <!-- ============ CONTROL PANEL ============ -->
+  <aside class="panel controls">
+    <h2 class="panel-title">Controls</h2>
+
+    <div class="control-group">
+      <label for="sunlight">☀️ Sunlight <span id="sunlightVal" class="control-value">75%</span></label>
+      <input type="range" id="sunlight" min="0" max="100" value="75">
+    </div>
+
+    <div class="control-group">
+      <label for="rainfall">🌧️ Rainfall <span id="rainfallVal" class="control-value">60%</span></label>
+      <input type="range" id="rainfall" min="0" max="100" value="60">
+    </div>
+
+    <div class="control-group">
+      <label for="initTemp">🌡️ Initial Water Temperature <span id="initTempVal" class="control-value">25°C</span></label>
+      <input type="range" id="initTemp" min="10" max="40" value="25">
+    </div>
+
+    <div class="control-group">
+      <label>💧 Water Volume</label>
+      <div class="volume-buttons" id="volumeButtons">
+        <button class="volume-btn" data-volume="5">5 L</button>
+        <button class="volume-btn active" data-volume="10">10 L</button>
+        <button class="volume-btn" data-volume="20">20 L</button>
+        <button class="volume-btn" data-volume="50">50 L</button>
+      </div>
+    </div>
+
+    <h2 class="panel-title panel-title-sub">Demo Modes</h2>
+    <div class="demo-modes">
+      <button class="btn btn-demo" id="modeSunny">☀️ Sunny Day</button>
+      <button class="btn btn-demo" id="modeRainy">🌧️ Rainy Day</button>
+      <button class="btn btn-demo" id="modeCloudy">☁️🌧️ Cloudy + Rainy</button>
+    </div>
+
+    <div class="mode-display" id="modeDisplay">Mode: HYBRID HEATING</div>
+
+    <div class="controller-status" id="controllerStatus">
+      <h3>🧠 Smart Controller</h3>
+      <p class="heating-mode" id="heatingMode">Heating Mode: IDLE</p>
+      <p class="controller-message" id="controllerMessage">Press Start to begin the simulation.</p>
+    </div>
+  </aside>
+
+  <!-- ============ SYSTEM DIAGRAM ============ -->
+  <section class="panel diagram-panel">
+    <h2 class="panel-title">System Diagram <span class="badge">SIMULATED VALUES</span></h2>
+
+    <div class="diagram" id="diagram">
+
+      <!-- RAIN BRANCH -->
+      <div class="branch branch-rain">
+        <div class="node node-roof">🏠 Roof</div>
+        <div class="pipe pipe-rain" id="pipeRoofToCollect"><div class="flow flow-water"></div></div>
+        <div class="node node-rain" id="nodeRainCollect">🌧️ Rainwater Collection
+          <div class="rain-layer" id="rainLayer"></div>
+        </div>
+        <div class="pipe pipe-rain" id="pipeCollectToFilter"><div class="flow flow-water"></div></div>
+        <div class="node node-filter">💧 Filter / Storage</div>
+        <div class="pipe pipe-rain" id="pipeFilterToTurbine"><div class="flow flow-water"></div></div>
+        <div class="node node-turbine" id="nodeTurbine">
+          <div class="turbine-icon" id="turbineIcon">⚙️</div>
+          <span>Micro Turbine</span>
+        </div>
+        <div class="pipe pipe-elec" id="pipeTurbineToGen"><div class="flow flow-elec"></div></div>
+        <div class="node node-generator">⚡ Generator</div>
+        <div class="pipe pipe-elec" id="pipeGenToBattery"><div class="flow flow-elec"></div></div>
+        <div class="node node-battery">
+          🔋 Battery
+          <div class="battery-shell"><div class="battery-fill" id="batteryFill"></div></div>
+        </div>
+        <div class="pipe pipe-elec" id="pipeBatteryToHeater"><div class="flow flow-elec"></div></div>
+        <div class="node node-heater" id="nodeHeater">🔥 Electrical Heating Element</div>
+      </div>
+
+      <!-- SOLAR BRANCH -->
+      <div class="branch branch-solar">
+        <div class="node node-sun" id="nodeSun">
+          ☀️ Sunlight
+          <div class="sun-rays" id="sunRays"></div>
+        </div>
+        <div class="pipe pipe-heat" id="pipeSunToCollector"><div class="flow flow-heat"></div></div>
+        <div class="node node-collector" id="nodeCollector">☀️ Solar Thermal Collector</div>
+        <div class="pipe pipe-heat" id="pipeCollectorToTank"><div class="flow flow-heat"></div></div>
+      </div>
+
+      <!-- COMMON TANK -->
+      <div class="branch branch-tank">
+        <div class="node node-tank" id="nodeTank">
+          <span class="tank-label">💧 Common Hot-Water Tank</span>
+          <div class="tank-shell">
+            <div class="tank-water" id="tankWater"></div>
+            <div class="tank-heatwave" id="tankHeatwave"></div>
+            <div class="tank-temp" id="tankTempReadout">25.0°C</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ LIVE VALUES ============ -->
+  <section class="panel values-panel">
+    <h2 class="panel-title">Live System Values <span class="badge">SIMULATED</span></h2>
+    <div class="value-grid">
+      <div class="value-card">
+        <span class="value-icon">☀️</span>
+        <span class="value-label">Solar Irradiance</span>
+        <span class="value-number" id="valSolarIrradiance">0 W/m²</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">☀️</span>
+        <span class="value-label">Collector Temp</span>
+        <span class="value-number" id="valCollectorTemp">25.0°C</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🌡️</span>
+        <span class="value-label">Collector Outlet</span>
+        <span class="value-number" id="valCollectorOutletTemp">25.0°C</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🔥</span>
+        <span class="value-label">Solar Useful Heat</span>
+        <span class="value-number" id="valSolarUsefulHeat">0 W</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🌧️</span>
+        <span class="value-label">Rainwater Flow</span>
+        <span class="value-number" id="valRainFlow">0.0 L/min</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">⚙️</span>
+        <span class="value-label">Turbine Output</span>
+        <span class="value-number" id="valTurbine">0.0 W</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">⚡</span>
+        <span class="value-label">Generator Power</span>
+        <span class="value-number" id="valGeneratorPower">0.0 W</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🔋</span>
+        <span class="value-label">Battery</span>
+        <span class="value-number" id="valBattery">0%</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🔋</span>
+        <span class="value-label">Battery Energy</span>
+        <span class="value-number" id="valBatteryWh">0.00 Wh</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🔥</span>
+        <span class="value-label">Electrical Heating</span>
+        <span class="value-number" id="valElecHeat">0.0 W</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🌡️</span>
+        <span class="value-label">Water Temperature</span>
+        <span class="value-number" id="valWaterTemp">25.0°C</span>
+      </div>
+<div class="value-card">
+        <span class="value-icon">🎯</span>
+        <span class="value-label">Target Temperature</span>
+        <span class="value-number" id="valTargetTemp">70°C</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">🛡️</span>
+        <span class="value-label">Max Temperature</span>
+        <span class="value-number" id="valMaxTemp">75°C</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">📊</span>
+        <span class="value-label">Total Heat to Tank</span>
+        <span class="value-number" id="valTotalHeatToTank">0.0 W</span>
+      </div>
+      <div class="value-card">
+        <span class="value-icon">💧</span>
+        <span class="value-label">Rainwater Collected</span>
+        <span class="value-number" id="valRainCollected">0.0 L</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ENERGY FLOW LEGEND ============ -->
+  <section class="panel legend-panel">
+    <h2 class="panel-title">Energy Flow Key</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch swatch-heat"></span> Heat energy (solar → tank)</div>
+      <div class="legend-item"><span class="legend-swatch swatch-water"></span> Water flow (rain → turbine)</div>
+      <div class="legend-item"><span class="legend-swatch swatch-elec"></span> Electrical energy (turbine → heater)</div>
+    </div>
+  </section>
+
+  <!-- ============ HEATING PROGRESS ============ -->
+  <section class="panel progress-panel">
+    <h2 class="panel-title">Heating Progress</h2>
+    <div class="progress-info">
+      <span id="progressRange">25°C / 50°C</span>
+      <span id="progressPercent">50%</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </section>
+
+  <!-- ============ ENERGY CONTRIBUTION ============ -->
+  <section class="panel contribution-panel">
+    <h2 class="panel-title">Energy Contribution</h2>
+    <div class="contribution-grid">
+      <div class="contribution-item">
+        <div class="contribution-header">
+          <span class="contribution-label">☀️ Solar Thermal</span>
+          <span class="contribution-value" id="solarContribution">0%</span>
+        </div>
+        <div class="contribution-bar">
+          <div class="contribution-fill solar" id="solarContributionBar"></div>
+        </div>
+      </div>
+      <div class="contribution-item">
+        <div class="contribution-header">
+          <span class="contribution-label">🔋 Battery Electrical</span>
+          <span class="contribution-value" id="rainContribution">0%</span>
+        </div>
+        <div class="contribution-bar">
+          <div class="contribution-fill rain" id="rainContributionBar"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIVE SYSTEM STATUS ============ -->
+  <section class="panel status-panel">
+    <h2 class="panel-title">Live System Status</h2>
+    <div class="status-grid">
+      <div class="status-item">
+        <span class="status-label">Rain Collection</span>
+        <span class="status-value" id="statusRainCollection">OFF</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Turbine</span>
+        <span class="status-value" id="statusTurbine">OFF</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Generator</span>
+        <span class="status-value" id="statusGenerator">OFF</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Battery</span>
+        <span class="status-value" id="statusBattery">IDLE</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Solar Collector</span>
+        <span class="status-value" id="statusSolarCollector">OFF</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Electric Heater</span>
+        <span class="status-value" id="statusElectricHeater">OFF</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Water Heating</span>
+        <span class="status-value" id="statusWaterHeating">INACTIVE</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="panel text-panel">
+    <h2 class="panel-title">How It Works</h2>
+    <ol class="steps">
+      <li>Rainwater is collected from the roof.</li>
+      <li>Collected water passes through a filter.</li>
+      <li>Flowing/falling water rotates a small turbine.</li>
+      <li>The turbine drives a generator.</li>
+      <li>Generated electricity is stored in a battery.</li>
+      <li>The battery can power a small heating element.</li>
+      <li>Solar thermal energy directly heats water.</li>
+      <li>Both sources contribute to the same insulated hot-water tank.</li>
+      <li>A controller decides which source should operate based on sunlight and rainfall.</li>
+    </ol>
+  </section>
+
+  <!-- ============ INNOVATION ============ -->
+  <section class="panel text-panel">
+    <h2 class="panel-title">Proposed Innovation</h2>
+    <p>This student prototype focuses on combining two complementary, already-known renewable techniques into one compact, automatically-managed system:</p>
+    <ul class="bullets">
+      <li>Automatic source switching between solar and rain-recovered energy</li>
+      <li>Efficient rainwater routing from roof to turbine</li>
+      <li>Compact, integrated hardware design</li>
+      <li>Combining solar thermal heating with rain-energy recovery</li>
+      <li>Using rain-generated electricity as supplementary heating</li>
+      <li>One common insulated water tank for both sources</li>
+      <li>Low-cost, buildable prototype design</li>
+    </ul>
+  </section>
+
+  <!-- ============ FUTURE HARDWARE PROTOTYPE ============ -->
+  <section class="panel hardware-panel">
+    <h2 class="panel-title">Future Hardware Prototype</h2>
+    <p class="hardware-note"><em>This section describes the planned physical prototype — not the current software simulation.</em></p>
+    <div class="hardware-chain">
+      <div class="hardware-stage">
+        <h3>🌧️ Rain Energy Path</h3>
+        <div class="hardware-flow">
+          <span class="hardware-component">Rainwater</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Micro Turbine</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Generator</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Charge Controller</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Battery</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Heating Element</span>
+        </div>
+      </div>
+      <div class="hardware-stage">
+        <h3>☀️ Solar Thermal Path</h3>
+        <div class="hardware-flow">
+          <span class="hardware-component">Solar Collector</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Common Hot Water Tank</span>
+        </div>
+      </div>
+      <div class="hardware-stage">
+        <h3>💧 Shared Storage</h3>
+        <div class="hardware-flow">
+          <span class="hardware-component">Insulated Water Tank</span>
+          <span class="hardware-arrow">→</span>
+          <span class="hardware-component">Hot Water Output</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SAFETY NOTE ============ -->
+  <section class="panel disclaimer-panel">
+    <p><strong>Educational simulation notice:</strong> This website is an educational simulation. Actual turbine output, heating power and water temperature depend on real-world rainfall, flow rate, turbine efficiency, solar intensity, tank insulation and hardware specifications.</p>
+    <p><strong>Safety:</strong> Actual hardware should use appropriate low-voltage electrical components and proper electrical protection.</p>
+  </section>
+
+</main>
+
+<script src="js/script.js"></script>
+</body>
+</html>
